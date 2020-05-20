@@ -128,7 +128,7 @@ export function getMetricMetaInfo(metric) {
             getIcon() {
                 return (
                     <View>
-                        <MaterialComunityIcons
+                        <MaterialCommunityIcons
                             name="food"
                             color={"black"}
                             size={35}
