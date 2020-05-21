@@ -4,6 +4,8 @@ import { getMetricMetaInfo, timeToString } from "../utils/helpers"
 import MySlider from './Slider'
 import Steppers from './Steppers'
 import DateHeader from './DateHeader'
+import { Ionicons } from '@expo/vector-icons'
+import TextButton from './TextButton'
 
 
 function SubmitBtn({ onPress }) {
@@ -78,9 +80,34 @@ export default class AddEntry extends Component {
         // Clear local notifications
     }
 
+    reset = () => {
+        const key = timeToString()
+
+        // Update Redux
+
+        // Return to Home
+
+        // Save the Database
+    }
+
     render() {
 
         const metaInfo = getMetricMetaInfo()
+
+        if (true) {
+            return (
+                <View>
+                    <Ionicons
+                        name="md-happy"
+                        size={100}
+                    />
+                    <Text>You alredy logged your information for today</Text>
+                    <TextButton onPress={this.reset}>
+                        Reset
+                    </TextButton>
+                </View>
+            )
+        }
 
         return (
             <View>
