@@ -48,7 +48,7 @@ class History extends Component {
     }
 
     render() {
-        const { entries } = this.entries
+        const { entries } = this.props
         return (
             <FitnessCalendar
                 items={entries}
