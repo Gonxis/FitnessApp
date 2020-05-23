@@ -1,189 +1,206 @@
-import React, { Component } from "react"
-import { View, Text, TouchableOpacity, Platform, StyleSheet } from "react-native"
-import { getMetricMetaInfo, timeToString, getDailyReminderValue } from "../utils/helpers"
+import React, { Component } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import MySlider from './Slider'
-import Steppers from './Steppers'
+import MySteppers from './Steppers'
+import { getMetricMetaInfo, timeToString } from '../utils/helpers'
 import DateHeader from './DateHeader'
-import { Ionicons } from '@expo/vector-icons'
+import {Ionicons } from '@expo/vector-icons'
 import TextButton from './TextButton'
 import { submitEntry, removeEntry } from '../utils/api'
 import { connect } from 'react-redux'
-import { addEntry } from '../actions' 
-import { white, purple } from '../utils/colors'
+import { addEntry } from '../actions'
+import { getDailyReminderValue } from '../utils/helpers'
+import { white, purple, gray, lightPurp } from '../utils/colors'
+import { CommonActions } from '@react-navigation/core';
+//import { CommonActions } from '@react-navigation/native';
 
-function SubmitBtn({ onPress }) {
-    return (
-        <TouchableOpacity
-            style={Platform.OS === 'ios' ? styles.iosSubmitButton : styles.androidSubmitButton}
+function SubmitBtn({onPress, disabled}){
+    return(
+        <TouchableOpacity 
+            style={[Platform.OS === 'ios'
+            ? styles.iosSubmitBtn
+            : styles.androidSubmitBtn, 
+            disabled
+            ? styles.disabled
+            : null]}
             onPress={onPress}
-        >
-            <Text style={styles.submitButtonText}>SUBMIT</Text>
+            disabled = {disabled}>
+            <Text style={styles.submitBtnText}>
+                SUBMIT
+            </Text>
         </TouchableOpacity>
     )
 }
 
-class AddEntry extends Component {
-
-    state = {
+class AddEntry extends Component{
+    state ={
         run: 0,
         bike: 0,
         swim: 0,
         sleep: 0,
-        eat: 0
+        eat: 0,
     }
-
-    increment = metric => {
+    increment = (metric) =>{
         const { max, step } = getMetricMetaInfo(metric)
-
-        this.setState((currentState) => {
-            const count = currentState[metric] + step
+        this.setState((state) =>({
+            [metric]: state[metric] > max? max : state[metric] + step
+        }))
+    }
+    /* increment = (metric) =>{
+        const { max, step } = getMetricMetaInfo(metric)
+        this.setState((state) =>{
+            const count = state[metric] + step
+            return {
+                ...state,
+                [metric]: count > max ? max : count
+            }
+        })
+    } */
+    decrement = (metric) =>{
+        const { step } = getMetricMetaInfo(metric)
+        this.setState((state) =>{
+            const count = state[metric] - step
 
             return {
-                ...currentState,
-                [metric]: count > max ? max : count 
+                ...state,
+                [metric]: count < 0 ? 0 : count
             }
         })
     }
-
-    decrement = metric => {
-
-        this.setState((currentState) => {
-            const count = currentState[metric] - getMetricMetaInfo(metric).step
-
-            return {
-                ...currentState,
-                [metric]: count < 0 ? 0 : count 
-            }
-        })
-    }
-
-    slide = (metric, value) => {
-        this.setState(() => ({
+    slide = (metric, value) =>{
+        this.setState(() =>({
             [metric]: value
         }))
     }
+    submit = () =>{
+        const key = timeToString();
+        const entry = this.state;
 
-    submit = () => {
-        const key = timeToString()
-        const entry = this.state
-
+        // Updated redux
         this.props.dispatch(addEntry({
-            [key]: entry
+            [key]:entry
         }))
-
-        this.setState(() => ({
+        this.setState(() =>({
             run: 0,
             bike: 0,
             swim: 0,
             sleep: 0,
-            eat: 0
+            eat: 0,
         }))
 
-        // Navigate to Home
+        // Navigate to home
+        this.props.goBack()
+        //this.toHome()
+        // Save to DB
+        submitEntry({key, entry})
 
-        submitEntry({ key, entry })
-
-        // Clear local notifications
+        // Clear local notification
     }
-
-    reset = () => {
+    reset =()=>{
         const key = timeToString()
 
+        // Update redux
         this.props.dispatch(addEntry({
             [key]: getDailyReminderValue()
         }))
 
-        // Return to Home
-
+        // Navigate to home
+        this.props.goBack()
+        //this.toHome()
+        // Save to DB
         removeEntry(key)
+
     }
-
-    render() {
-
+    /* toHome = () =>{
+        this.props.navigation.dispatch(CommonActions.goBack({
+            key: 'AddEntry'
+        }))
+    } */
+    render(){
         const metaInfo = getMetricMetaInfo()
+        const NotFilled = Object.keys(this.state).map((key) => this.state[key])
+                                .filter((filt) => filt != 0)
 
-        if (this.props.alreadyLogged) {
-            return (
+        if (this.props.alreadyLogged){
+            return(
                 <View style={styles.center}>
                     <Ionicons
-                        name={Platform.OS === 'ios' ? 'ios-happy' : "md-happy"}
+                        name={Platform.OS === 'ios'?'ios-happy':'md-happy'}
                         size={100}
                     />
-                    <Text>You alredy logged your information for today</Text>
-                    <TextButton style={{padding: 10}} onPress={this.reset}>
+                    <Text>You already logged your information for today</Text>
+                    <TextButton style={{padding:10}} onPress={this.reset}>
                         Reset
                     </TextButton>
                 </View>
             )
         }
-
-        return (
+        return(
             <View style={styles.container}>
-                <DateHeader date={(new Date()).toLocaleDateString()} />
-                <Text>Add Entry</Text>
-                {Object.keys(metaInfo).map( key => {
-                    const { getIcon, type, ...rest } = metaInfo[key]
-                    const value = this.state[key]
+                <DateHeader date={(new Date()).toDateString()} />
+                { Object.keys(metaInfo).map((key) =>{
+                   const { getIcon, type, ...rest} = metaInfo[key]
+                   const value = this.state[key]
+                
+                   return(
+                        <View key ={key} style={styles.row}>
+                        {getIcon()}
+                        {type === 'slider'
+                        ? <MySlider
+                            value={value}
+                            onChange={(value) => this.slide(key, value)}
+                            {...rest} />
+                        : <MySteppers
+                             value={value}
+                             onIncrement={() => this.increment(key)}
+                             onDecrement={() => this.decrement(key)}
+                            {...rest} />}
 
-                    return (
-                        <View key={key} style={styles.row}>
-                            {getIcon()}
-                            {type === "slider" ?
-                                <MySlider
-                                    value={value}
-                                    onChange={value => this.slide(key, value)}
-                                    {...rest}
-                                /> :
-                                <Steppers 
-                                    value={value}
-                                    onIncrement={() => this.increment(key)}
-                                    onDecrement={() => this.decrement(key)}
-                                    {...rest}
-                                />
-                            }
                         </View>
-                    )
+                   )
                 })}
-                <SubmitBtn onPress={this.submit} />
+                <SubmitBtn 
+                    onPress={this.submit}
+                    disabled={NotFilled.length === 0? true: false } />
             </View>
         )
     }
 }
-
 const styles = StyleSheet.create({
-    container: {
+    container:{
         flex: 1,
-        paddingRight: 20,
-        backgroundColor: white,
+        padding: 20,
+        backgroundColor: white
     },
-    row: {
+    row:{
         flexDirection: 'row',
         flex: 1,
-        alignItems: 'center'
+        alignItems: 'flex-start'
     },
-    iosSubmitButton: {
+    iosSubmitBtn: {
         backgroundColor: purple,
         padding: 10,
         borderRadius: 7,
         height: 45,
         marginLeft: 40,
-        marginRight: 40
+        marginRight: 40,
     },
-    androidSubmitButton: {
+    androidSubmitBtn:{
         backgroundColor: purple,
         padding: 10,
         paddingLeft: 30,
         paddingRight: 30,
-        borderRadius: 2,
         height: 45,
+        borderRadius: 2,
         alignSelf: 'flex-end',
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'center'
+
     },
-    submitButtonText: {
+    submitBtnText: {
         color: white,
         fontSize: 22,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     center: {
         flex: 1,
@@ -191,15 +208,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginRight: 30,
         marginLeft: 30
+    },
+    disabled:{
+        backgroundColor:lightPurp, 
+        color: gray
     }
 })
-
-function mapStateToProps(state) {
+function mapStateToProps(state){
     const key = timeToString()
-
-    return {
-        alreadyLogged: state[key] && typeof state[key].today === 'undefined'
+    return{
+        alreadyLogged : state[key] && typeof state[key].today === 'undefined'
     }
 }
-
-export default connect(mapStateToProps)(AddEntry)
+function mapDispatchToProps(dispatch, { navigation }){
+ 
+    return{
+        dispatch,
+        goBack: () => navigation.goBack()
+    }
+}
+export default connect(mapStateToProps, mapDispatchToProps)(AddEntry)
