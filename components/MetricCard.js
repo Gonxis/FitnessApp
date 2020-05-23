@@ -4,15 +4,19 @@ import DateHeader from './DateHeader'
 import { getMetricMetaInfo } from '../utils/helpers'
 import { gray } from '../utils/colors'
 
-export default function MetricCard ({ date, metrics }) {
-    return (
+export default function MetricCard ({date, metrics }){
+    return(
         <View>
             {date && <DateHeader date={date} />}
-            {Object.keys(metrics).map(metric => {
-                const { getIcon, displayName, unit, backbroundColor } = getMetricMetaInfo(metric)
+            {Object.keys(metrics).map((metric) =>{
+               const {
+                   getIcon,
+                   displayName,
+                   unit
+               }  = getMetricMetaInfo(metric)
 
-                return (
-                    <View style={styles.metric} key={metric}>
+               return(
+                   <View style={styles.metric} key={metric}>
                         {getIcon()}
                         <View>
                             <Text style={{fontSize: 20}}>
@@ -23,14 +27,14 @@ export default function MetricCard ({ date, metrics }) {
                             </Text>
                         </View>
                     </View>
-                )
+               )
             })}
         </View>
     )
 }
 
 const styles = StyleSheet.create({
-    metric: {
+    metric:{
         flexDirection: 'row',
         marginTop: 12,
     }
